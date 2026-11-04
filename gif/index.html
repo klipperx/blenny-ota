@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blenny · Add a GIF</title>
+<style>
+  :root {
+    --bg: #10151F; --panel: #1B2333; --line: #2E3A50; --text: #F4F1EA; --muted: #A9B4C2;
+    --accent: #FF8A3D; --ok: #3BC9B5; --bad: #FF6B6B;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+    padding: 20px; margin-bottom: 16px; }
+  h2 { font-size: 18px; margin: 0 0 12px; display: flex; gap: 10px; align-items: center; }
+  .n { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: #10151F; font-size: 14px; font-weight: 700; }
+  button { font: inherit; font-weight: 600; border: 0; border-radius: 10px; padding: 10px 18px;
+    background: var(--accent); color: #10151F; cursor: pointer; }
+  button.ghost { background: transparent; color: var(--muted); border: 1px solid var(--line);
+    padding: 6px 12px; font-weight: 500; }
+  button:disabled { opacity: .4; cursor: default; }
+  .status { color: var(--muted); margin-top: 10px; }
+  .status.ok { color: var(--ok); } .status.bad { color: var(--bad); }
+  #drop { border: 2px dashed var(--line); border-radius: 12px; padding: 28px; text-align: center;
+    color: var(--muted); cursor: pointer; }
+  #drop.over { border-color: var(--accent); color: var(--text); }
+  .badge { width: 100%; max-width: 480px; aspect-ratio: 320 / 170; margin: 16px auto 0;
+    background: #000; border: 10px solid #2a2a2a; border-radius: 14px; display: grid;
+    place-items: center; overflow: hidden; }
+  .badge img { image-rendering: pixelated; max-width: 100%; max-height: 100%; }
+  progress { width: 100%; height: 12px; accent-color: var(--accent); margin-top: 12px; }
+  ul { list-style: none; padding: 0; margin: 0; }
+  li { display: flex; justify-content: space-between; align-items: center; padding: 8px 0;
+    border-top: 1px solid var(--line); }
+  li:first-child { border-top: 0; }
+  .warn { background: #3a1d1d; border-color: #6b2b2b; }
+  .meta { color: var(--muted); font-size: 14px; }
+  input[type=text] { font: inherit; background: var(--bg); color: var(--text);
+    border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 220px; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .notice { display: flex; gap: 14px; align-items: flex-start; background: #2B2213;
+    border: 1px solid #6B4F1D; border-radius: 14px; padding: 16px 18px; margin-bottom: 16px; }
+  .notice .ico { flex: none; width: 28px; height: 28px; border-radius: 50%; background: #FFB347;
+    color: #10151F; font-weight: 800; display: grid; place-items: center; }
+  .notice b { color: #FFD08A; }
+
+  /* 80s Trans Am dash: black bezel, glowing segment arc, red digital readout */
+  .dash { background: radial-gradient(ellipse at 50% 20%, #1a1a1a 0%, #050505 70%);
+    border: 3px solid #2a2a2a; border-radius: 18px; padding: 18px 18px 14px;
+    box-shadow: inset 0 0 0 2px #000, inset 0 8px 30px rgba(255, 40, 0, .08), 0 6px 18px #0008;
+    margin: 4px 0 18px; }
+  .dash svg { display: block; width: 100%; max-width: 440px; margin: 0 auto; }
+  .dash .readout { text-align: center; font-family: "Courier New", ui-monospace, monospace;
+    font-weight: 700; color: #FF3B1F; letter-spacing: 4px; font-size: 34px; line-height: 1;
+    text-shadow: 0 0 6px #ff2a00, 0 0 18px #ff2a0088; margin-top: -54px; }
+  .dash .label { text-align: center; font-family: "Courier New", ui-monospace, monospace;
+    color: #FFB347; letter-spacing: 6px; font-size: 13px; margin-top: 8px;
+    text-shadow: 0 0 6px #ff8c0088; }
+  .dash .sub2 { display: flex; justify-content: space-between; max-width: 440px; margin: 10px auto 0;
+    font-family: "Courier New", ui-monospace, monospace; font-size: 13px; letter-spacing: 2px;
+    color: #8a3a2a; }
+  .dash .sub2 span { color: #FF6A3D; text-shadow: 0 0 6px #ff2a0066; }
+
+  details { margin-top: 8px; color: var(--muted); }
+  summary { cursor: pointer; }
+  pre#log { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px;
+    max-height: 240px; overflow: auto; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Add a GIF to your Blenny</h1>
+  <p class="sub">Your GIF shows up in Silly Animations. Up to 8 GIFs, 1&nbsp;MB each.</p>
+
+  <div class="notice" role="note">
+    <span class="ico" aria-hidden="true">!</span>
+    <div><b>Heads up: this runs over USB serial.</b> That’s the same slow link used to program the
+      badge, so sending a GIF can take anywhere from a few seconds to about a minute, with the odd
+      pause while the badge catches up. Be patient, keep the badge plugged in, and leave this tab
+      open until it says Done.</div>
+  </div>
+
+  <section id="unsupported" class="warn" hidden>
+    This page needs <b>Chrome or Edge</b> on a laptop or desktop (it talks to the badge over USB).
+    Safari, Firefox and phones can't do that.
+  </section>
+
+  <section>
+    <h2><span class="n">1</span> Connect your badge</h2>
+    <p class="meta">Plug the badge in with a USB-C data cable, then pick it from the list
+      (it may show as “USB JTAG/serial debug unit”).</p>
+    <button id="connect">Connect badge</button>
+    <div id="cstatus" class="status"></div>
+  </section>
+
+  <section>
+    <h2><span class="n">2</span> Choose a GIF</h2>
+    <div id="drop">Drop a .gif here, or click to choose one</div>
+    <input id="file" type="file" accept="image/gif" hidden>
+    <div class="badge" id="badge" hidden><img id="preview" alt="Preview of the GIF on the badge"></div>
+    <div class="row" id="namerow" hidden>
+      <label for="name" class="meta">Name</label>
+      <input id="name" type="text" maxlength="24">
+      <span id="fstatus" class="meta"></span>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span> Send it</h2>
+    <p class="meta">Takes a few seconds to a minute depending on size. Keep the badge plugged in
+      and this tab open; short pauses are normal while the badge catches up.</p>
+    <button id="send" disabled>Send to badge</button>
+    <progress id="prog" value="0" max="100" hidden></progress>
+    <div id="sstatus" class="status"></div>
+  </section>
+
+  <details>
+    <summary>Badge log (for troubleshooting)</summary>
+    <pre id="log"></pre>
+    <button class="ghost" id="copylog">Copy log</button>
+  </details>
+
+  <section id="listsec" hidden>
+    <h2>On your badge</h2>
+    <div class="dash" id="dash" role="img" aria-label="Storage gauge">
+      <svg id="gauge" viewBox="0 0 440 240" aria-hidden="true"></svg>
+      <div class="readout" id="gpct">--%</div>
+      <div class="label">GIF STORAGE</div>
+      <div class="sub2"><div>USED <span id="gused">--</span></div><div>FREE <span id="gfree">--</span></div>
+        <div>SLOTS <span id="gslots">-/-</span></div></div>
+    </div>
+    <ul id="list"></ul>
+    <div id="lmeta" class="meta"></div>
+  </section>
+</main>
+
+<script type="module">
+import { GIFEncoder, quantize, applyPalette } from "./gifenc.esm.js";
+
+const W = 320, H = 170, MAX_BYTES = 1024 * 1024, MAX_FRAMES = 120, CHUNK = 1024;
+const $ = (id) => document.getElementById(id);
+const say = (el, msg, cls = "") => { el.textContent = msg; el.className = "status " + cls; };
+
+if (!("serial" in navigator) || !("ImageDecoder" in window)) {
+  $("unsupported").hidden = false;
+  $("connect").disabled = true;
+}
+
+// ---------- serial ----------
+let port = null, writer = null, lines = [], waiters = [], badgeFw = "";
+
+async function connect() {
+  try {
+    port = await navigator.serial.requestPort({ filters: [{ usbVendorId: 0x303a }] });
+    await port.open({ baudRate: 115200 });
+  } catch (e) {
+    say($("cstatus"), "No badge chosen.", "bad");
+    return;
+  }
+  const enc = new TextEncoderStream();
+  enc.readable.pipeTo(port.writable);
+  writer = enc.writable.getWriter();
+  readLoop();
+  say($("cstatus"), "Waiting for the badge (it restarts when connected)…");
+  // The badge reboots when the port opens; keep asking until it answers.
+  const deadline = Date.now() + 15000;
+  let who = null;
+  while (!who && Date.now() < deadline) {
+    await send("WHO");
+    who = await waitFor((l) => l.startsWith("ID "), 900);
+  }
+  if (!who) {
+    say($("cstatus"), "The badge didn't answer. Unplug it, plug it back in and try again.", "bad");
+    return;
+  }
+  const name = (who.match(/NAME (.*?) COLOR/) || [])[1] || "your badge";
+  badgeFw = (who.match(/ FW ([\d.]+)/) || [])[1] || "";
+  if (!badgeFw || cmpVer(badgeFw, "2.3.0") < 0) {
+    say($("cstatus"), `Connected to ${name}, but it needs firmware 2.3.0 or newer. ` +
+        "Leave it on CNET-Guest for a few minutes and it will update itself.", "bad");
+    return;
+  }
+  say($("cstatus"), `Connected to ${name} (firmware ${badgeFw}).`, "ok");
+  $("connect").textContent = "Connected";
+  $("connect").disabled = true;
+  await refreshList();
+  updateSend();
+}
+
+async function readLoop() {
+  const dec = new TextDecoderStream();
+  port.readable.pipeTo(dec.writable);
+  const reader = dec.readable.getReader();
+  let buf = "";
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += value;
+      let i;
+      while ((i = buf.indexOf("\n")) >= 0) {
+        const line = buf.slice(0, i).replace(/\r$/, "");
+        buf = buf.slice(i + 1);
+        if (line) log("<", line);
+        const w = waiters.findIndex((x) => x.match(line));
+        if (w >= 0) waiters.splice(w, 1)[0].resolve(line);
+        else lines.push(line);
+      }
+    }
+  } catch (e) {
+    log("!", "read stopped: " + e);
+    say($("cstatus"), "Badge disconnected.", "bad");
+    $("connect").disabled = false;
+    $("connect").textContent = "Connect badge";
+  }
+}
+
+const logLines = [];
+function log(dir, text) {
+  const t = new Date().toISOString().slice(11, 23);
+  logLines.push(`${t} ${dir} ${text.length > 90 ? text.slice(0, 90) + "…" : text}`);
+  if (logLines.length > 400) logLines.shift();
+  $("log").textContent = logLines.join("\n");
+}
+$("copylog").onclick = () => navigator.clipboard.writeText(logLines.join("\n"));
+
+function send(line) { log(">", line); return writer.write(line + "\n"); }
+
+function waitFor(match, ms) {
+  return new Promise((resolve) => {
+    const w = { match, resolve };
+    waiters.push(w);
+    setTimeout(() => {
+      const i = waiters.indexOf(w);
+      if (i >= 0) { waiters.splice(i, 1); resolve(null); }
+    }, ms);
+  });
+}
+
+const reply = (verb) => (l) => l.startsWith("OK " + verb) || l.startsWith("ERR");
+
+// Sweeping arc of 30 segments, 200 degrees; lit ones glow amber -> orange -> red.
+const KEEP_FREE = 256 * 1024;  // the badge always holds this back for roster/schedule updates
+function drawGauge(usedBytes, freeBytes, n, max) {
+  const cap = Math.max(1, usedBytes + Math.max(0, freeBytes - KEEP_FREE));
+  const frac = Math.min(1, usedBytes / cap);
+  const segs = 30, lit = Math.round(frac * segs);
+  const cx = 220, cy = 200, r0 = 150, r1 = 190, a0 = 190, a1 = -10;
+  let svg = "";
+  for (let i = 0; i < segs; i++) {
+    const t0 = a0 + (a1 - a0) * (i + 0.12) / segs, t1 = a0 + (a1 - a0) * (i + 0.88) / segs;
+    const p = (r, t) => [cx + r * Math.cos(t * Math.PI / 180), cy - r * Math.sin(t * Math.PI / 180)];
+    // Segments get taller toward the redline, like a tach.
+    const rr = r1 + (i / segs) * 14;
+    const [x1, y1] = p(r0, t0), [x2, y2] = p(rr, t0), [x3, y3] = p(rr, t1), [x4, y4] = p(r0, t1);
+    const zone = i / segs;
+    const on = zone < 0.6 ? "#FFB020" : zone < 0.85 ? "#FF6A10" : "#FF2A1A";
+    const off = zone < 0.6 ? "#2A1D06" : zone < 0.85 ? "#2A1406" : "#2A0906";
+    const isOn = i < lit;
+    svg += `<path d="M${x1},${y1} L${x2},${y2} L${x3},${y3} L${x4},${y4} Z" fill="${isOn ? on : off}"` +
+      (isOn ? ` style="filter:drop-shadow(0 0 4px ${on})"` : "") + "/>";
+  }
+  // Tick labels like a tach face.
+  for (const [v, txt] of [[0, "E"], [0.5, "½"], [1, "F"]]) {
+    const t = a0 + (a1 - a0) * v, rad = t * Math.PI / 180;
+    svg += `<text x="${cx + 126 * Math.cos(rad)}" y="${cy - 126 * Math.sin(rad) + 6}" fill="#7a5a2a"
+      font-family="Courier New, monospace" font-size="16" font-weight="700" text-anchor="middle">${txt}</text>`;
+  }
+  $("gauge").innerHTML = svg;
+  const pct = Math.round(frac * 100);
+  $("gpct").textContent = `${String(pct).padStart(2, "0")}%`;
+  $("gused").textContent = mb(usedBytes);
+  $("gfree").textContent = mb(Math.max(0, cap - usedBytes));
+  $("gslots").textContent = `${n}/${max}`;
+  $("dash").setAttribute("aria-label",
+    `GIF storage ${pct}% used: ${mb(usedBytes)} used, ${mb(Math.max(0, cap - usedBytes))} free, ${n} of ${max} slots`);
+}
+function mb(b) { return b >= 1024 * 1024 ? (b / 1048576).toFixed(1) + "MB" : Math.round(b / 1024) + "KB"; }
+
+async function refreshList() {
+  const got = [];
+  const collect = (l) => { if (l.startsWith("GIF ")) { got.push(l); return false; }
+    return l.startsWith("OK GIFLIST") || l.startsWith("ERR"); };
+  await send("GIFLIST");
+  const end = await waitFor(collect, 15000);
+  const list = $("list");
+  list.innerHTML = "";
+  for (const l of got) {
+    const [, name, bytes] = l.split(" ");
+    const li = document.createElement("li");
+    li.innerHTML = `<span>${escapeHtml(name)} <span class="meta">${Math.round(bytes / 1024)} KB</span></span>`;
+    const del = document.createElement("button");
+    del.className = "ghost";
+    del.textContent = "Delete";
+    del.onclick = async () => {
+      del.disabled = true;
+      await send("GIFDEL " + name);
+      await waitFor(reply("GIFDEL"), 15000);
+      refreshList();
+    };
+    li.appendChild(del);
+    list.appendChild(li);
+  }
+  if (end && end.startsWith("OK GIFLIST")) {
+    const [, , n, max, free] = end.split(" ");
+    const used = got.reduce((sum, l) => sum + (parseInt(l.split(" ")[2], 10) || 0), 0);
+    drawGauge(used, parseInt(free, 10) || 0, parseInt(n, 10) || 0, parseInt(max, 10) || 8);
+    $("lmeta").textContent = "";
+  }
+  if (!got.length) list.innerHTML = '<li class="meta">No custom GIFs yet.</li>';
+  $("listsec").hidden = false;
+}
+
+// ---------- GIF prep ----------
+let ready = null;  // { bytes: Uint8Array, name }
+
+$("drop").onclick = () => $("file").click();
+$("file").onchange = (e) => e.target.files[0] && prepare(e.target.files[0]);
+$("drop").ondragover = (e) => { e.preventDefault(); $("drop").classList.add("over"); };
+$("drop").ondragleave = () => $("drop").classList.remove("over");
+$("drop").ondrop = (e) => {
+  e.preventDefault();
+  $("drop").classList.remove("over");
+  const f = e.dataTransfer.files[0];
+  if (f) prepare(f);
+};
+$("name").oninput = () => { $("name").value = cleanName($("name").value); updateSend(); };
+
+async function prepare(file) {
+  ready = null;
+  updateSend();
+  $("namerow").hidden = false;
+  $("name").value = cleanName(file.name.replace(/\.gif$/i, ""));
+  if (file.type !== "image/gif" && !/\.gif$/i.test(file.name)) {
+    $("fstatus").textContent = "That isn't a GIF.";
+    return;
+  }
+  $("fstatus").textContent = "Preparing…";
+  const buf = new Uint8Array(await file.arrayBuffer());
+  try {
+    const dec = new ImageDecoder({ data: buf, type: "image/gif" });
+    await dec.tracks.ready;
+    const count = dec.tracks.selectedTrack.frameCount;
+    const first = (await dec.decode({ frameIndex: 0 })).image;
+    const sw = first.displayWidth, sh = first.displayHeight;
+    first.close();
+    let bytes;
+    if (sw <= W && sh <= H && buf.length <= MAX_BYTES && count <= MAX_FRAMES) {
+      bytes = buf;  // already fits: send it untouched
+    } else {
+      let step = Math.max(1, Math.ceil(count / MAX_FRAMES));
+      for (;;) {
+        bytes = await reencode(dec, count, sw, sh, step);
+        if (bytes.length <= MAX_BYTES || step >= 8) break;
+        step *= 2;  // still too big: keep every other frame
+      }
+    }
+    dec.close();
+    if (bytes.length > MAX_BYTES) {
+      $("fstatus").textContent = `Too big even after shrinking (${kb(bytes.length)}). Try a shorter GIF.`;
+      return;
+    }
+    ready = { bytes };
+    $("preview").src = URL.createObjectURL(new Blob([bytes], { type: "image/gif" }));
+    $("badge").hidden = false;
+    $("fstatus").textContent = `${kb(bytes.length)} · fits the badge`;
+  } catch (e) {
+    $("fstatus").textContent = "Couldn't read that GIF.";
+  }
+  updateSend();
+}
+
+async function reencode(dec, count, sw, sh, step) {
+  const scale = Math.min(1, W / sw, H / sh);
+  const w = Math.max(1, Math.round(sw * scale)), h = Math.max(1, Math.round(sh * scale));
+  const canvas = new OffscreenCanvas(w, h);
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  const gif = GIFEncoder();
+  for (let i = 0; i < count; i += step) {
+    $("fstatus").textContent = `Shrinking frame ${i + 1} of ${count}…`;
+    let delay = 0;
+    let img = null;
+    for (let k = i; k < Math.min(count, i + step); k++) {
+      const r = (await dec.decode({ frameIndex: k })).image;
+      delay += (r.duration || 100000) / 1000;
+      if (k === i) img = r; else r.close();
+    }
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+    img.close();
+    const { data } = ctx.getImageData(0, 0, w, h);
+    const palette = quantize(data, 256);
+    const index = applyPalette(data, palette);
+    gif.writeFrame(index, w, h, { palette, delay: Math.max(20, Math.round(delay)) });
+  }
+  gif.finish();
+  return gif.bytes();
+}
+
+// ---------- send ----------
+$("connect").onclick = connect;
+$("send").onclick = upload;
+
+function updateSend() { $("send").disabled = !(writer && ready && $("name").value && badgeFw); }
+
+async function upload() {
+  const name = $("name").value;
+  const bytes = ready.bytes;
+  $("send").disabled = true;
+  $("prog").hidden = false;
+  $("prog").value = 0;
+  say($("sstatus"), "Starting… the badge may take a moment to answer.");
+  // Each step waits a few seconds and retries; the badge ignores a chunk it already has.
+  const patient = (pct) => say($("sstatus"),
+      `Sending ${pct}%… keep the badge plugged in. Short pauses are normal; it catches up on its own.`);
+  let pct = 0;
+  const attempt = async (line, match, tries = 6, ms = 2500) => {
+    for (let i = 0; i < tries; i++) {
+      await send(line);
+      const r = await waitFor(match, ms);
+      if (r) return r;
+      log("!", `no reply, retry ${i + 1}`);
+      say($("sstatus"), `Badge is catching up… (${pct}%, retry ${i + 1})`);
+    }
+    return null;
+  };
+  let r = await attempt(`GIFBEGIN ${name} ${bytes.length} ${crc32(bytes).toString(16)}`,
+                        reply("GIFBEGIN"), 4, 8000);
+  if (!r || r.startsWith("ERR")) return fail(r, "starting");
+  let off = 0, resends = 0;
+  while (off < bytes.length) {
+    const part = bytes.subarray(off, off + CHUNK);
+    const want = `OK GIFDATA ${off + part.length}`;
+    r = await attempt(`GIFDATA ${off} ${b64(part)}`,
+                      (l) => l === want || l.startsWith("ERR") || l.startsWith("RESEND"));
+    if (r && r.startsWith("RESEND") && ++resends < 40) {
+      off = parseInt(r.split(" ")[1], 10) || 0;  // badge says where it really is
+      continue;
+    }
+    if (!r || !r.startsWith("OK")) return fail(r, `at ${Math.round((off * 100) / bytes.length)}%`);
+    off += part.length;
+    pct = Math.round((off * 100) / bytes.length);
+    $("prog").value = pct;
+    patient(pct);
+  }
+  await send("GIFEND");
+  r = await waitFor(reply("GIFEND"), 20000);
+  if (r && r.startsWith("ERR")) return fail(r);
+  if (!r) {
+    // The badge sometimes answers late; trust its file list instead.
+    await send("GIFLIST");
+    const hit = await waitFor((l) => l === `GIF ${name} ${bytes.length}`, 15000);
+    if (!hit) return fail(null);
+  }
+  say($("sstatus"), `Done! “${name}” is on your badge in Silly Animations.`, "ok");
+  updateSend();
+  refreshList();
+}
+
+function fail(r, where = "") {
+  say($("sstatus"), r ? r.replace(/^ERR\s*/, "Badge said: ") :
+      `The badge stopped answering${where ? " " + where : ""}. Open “Badge log” below and copy it.`, "bad");
+  updateSend();
+}
+
+// ---------- helpers ----------
+function cleanName(s) { return s.replace(/[ .]/g, "_").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 24); }
+function kb(n) { return `${Math.round(n / 1024)} KB`; }
+function escapeHtml(s) { return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+function b64(u8) { let s = ""; for (let i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]); return btoa(s); }
+function cmpVer(a, b) {
+  const x = a.split(".").map(Number), y = b.split(".").map(Number);
+  for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0); }
+  return 0;
+}
+const CRC_TABLE = (() => { const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t; })();
+function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+</script>
+</body>
+</html>
